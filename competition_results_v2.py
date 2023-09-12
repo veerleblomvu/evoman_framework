@@ -16,7 +16,7 @@ import pygame
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 ###### CREATE A FOLDER CALLED solutions IN THE SAME DIRECTORY AS THIS SCRIPT  AND PASTE ALL SOLUTION TXTs THERE ! #####
-
+# 12-9-2023
 mode = "test"  # Can be test for generating competition files, or demo to just present the winners
 
 ######
