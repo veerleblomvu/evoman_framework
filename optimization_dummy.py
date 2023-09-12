@@ -5,8 +5,6 @@
 # karine.smiras@gmail.com     				                                  #
 ###############################################################################
 
-#test 12-09-2023
-
 # imports framework
 import sys
 
