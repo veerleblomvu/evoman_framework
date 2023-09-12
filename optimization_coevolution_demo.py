@@ -56,6 +56,7 @@ env.state_to_log() # checks environment state
 
 
 ####   Optimization for controller solution (best genotype/weights for perceptron phenotype network): Ganetic Algorihm    ###
+####   test 12 sept
 
 ini = time.time()  # sets time marker
 
