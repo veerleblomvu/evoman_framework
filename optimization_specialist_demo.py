@@ -128,13 +128,14 @@ def crossover(pop):
 
         for f in range(0,n_offspring):
 
-            cross_prop = np.random.uniform(0,1)
-            offspring[f] = p1*cross_prop+p2*(1-cross_prop)
+            cross_prop = np.random.uniform(0,1)  #for every child the alpha is regenerated -->
+            offspring[f] = p1*cross_prop+p2*(1-cross_prop)#cross_prop is alpha from the slides 
+            #= whole crossover (Whole arithmetic_)
 
             # mutation
             for i in range(0,len(offspring[f])):
                 if np.random.uniform(0 ,1)<=mutation:
-                    offspring[f][i] =   offspring[f][i]+np.random.normal(0, 1)
+                    offspring[f][i] =   offspring[f][i]+np.random.normal(0, 1)#uniform mutation
 
             offspring[f] = np.array(list(map(lambda y: limits(y), offspring[f])))
 
@@ -218,14 +219,14 @@ file_aux.write('\n'+str(ini_g)+' '+str(round(fit_pop[best],6))+' '+str(round(mea
 file_aux.close()
 
 
-# evolution
+# evolution --> main loop
 
 last_sol = fit_pop[best]
 notimproved = 0
 
 for i in range(ini_g+1, gens):
 
-    offspring = crossover(pop)  # crossover
+    offspring = crossover(pop)  # crossover --> both recombination and mutation --> uit elkaar halen
     fit_offspring = evaluate(offspring)   # evaluation
     pop = np.vstack((pop,offspring))
     fit_pop = np.append(fit_pop,fit_offspring)
