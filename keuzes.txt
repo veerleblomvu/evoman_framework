@@ -1,0 +1,44 @@
+pop =100
+gen = 30
+mutation rate = 0.2
+lower, upper bound = -1 and 1
+        because the output will be 0/1 but before that it will be normalised and when we choose
+        -1 and 1 we can keep the code from the demo 
+
+number of hidden neurons = 10 --> will result in 265 weights 
+        just like optimization_specialist_demo.py (we could also add an extra layer but for now this is fine)
+
+uniform distribution for random weight initialisation 
+        in the beginnng we want search the space 
+        https://www.quora.com/What-are-the-advantages-of-using-uniform-distribution-over-random-numbers-in-simulations
+
+parent selection:
+- for now we copied the code from the jupyter notebook "simple neural network"
+        expl:
+        we have a population and a way to evaluate it, we can decide which individuals are fit to be a parent. Often this is done in a stochastic manner but influenced by the individuals fitness score.
+        We want to perform crossover later so we are picking parents in pairs of two.
+        Fitness is recalculated by adding the lowest score to make the value range from 0 upwards. A smoothing factor is added to give the worst individual still a chance to be picked and preventing a divide by 0 in case all individuals have the same fitness.
+        --> bron zoeken
+                waarom deze vorm van parent selection passend is in dit probleem
+                waarom we voor smoothing =1 hebben gekozen  
+
+        def parent_selection(pop, pop_fit, n_parents, smoothing = 1):
+                fitness  = pop_fit + smoothing - np.min(pop_fit)
+
+                # Fitness proportional selection probability
+                fps = fitness / np.sum (fitness)
+                
+                # make a random selection of indices
+                parent_indices = np.random.choice (np.arange(0,pop.shape[0]), (n_parents,2), p=fps)
+                return pop [parent_indices]
+
+recombination: we chose uniform crossover       
+        "Uniform Crossover." In Uniform Crossover, for each gene in the chromosome, the gene is inherited from 
+        one of the parents with equal probability. This means that each gene in the offspring is randomly 
+        selected from either of the parents. It's a basic form of crossover that helps introduce genetic 
+        diversity into the population.
+
+
+mutatation rate: for now 0.2(taken from optimization_specialist_demo,py)
+        we need to find a source for this
+        mutation type: uniform mutation 
