@@ -13,10 +13,22 @@ import time
 import numpy as np
 from math import fabs,sqrt
 import glob, os
+#import path 
+import csv
 
 experiment_name = 'group_65_test'
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
+
+if not os.path.exists("results.csv"):
+    #makes the initial csv file
+    with open('results.csv', 'w') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow(["Run 1"])
+else:
+    with open('results.csv', 'a') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow(["New Run"])
 
 # choose this for not using visuals and thus making experiments faster
 headless = True
@@ -49,6 +61,7 @@ run_mode = 'train' # train or test
 # runs simulation (one game by one player)
 def simulation(env,pop):
     fitness,p_energy,e_energy,duration = env.play(pcont=pop)
+    #print(p_energy, e_energy)
     return fitness, p_energy, e_energy, duration
 
 # adds fitness for all individuals in population to a list
@@ -117,47 +130,6 @@ env = Environment(experiment_name=experiment_name)
 pop = initialize(pop_size, lower_bound, upper_bound, n_weights)
 pop_fit = evaluate(pop)
 
-# initializes population loading old solutions or generating new ones
-
-if not os.path.exists(experiment_name+'/evoman_solstate'):
-
-    print( '\nNEW EVOLUTION\n')
-
-    pop = np.random.uniform(lower_bound, upper_bound, (pop_size, n_weights))
-    fit_pop = evaluate(pop)
-    best = np.argmax(fit_pop)
-    mean = np.mean(fit_pop)
-    std = np.std(fit_pop)
-    ini_g = 0
-    solutions = [pop, fit_pop]
-    env.update_solutions(solutions)
-
-else:
-
-    print( '\nCONTINUING EVOLUTION\n')
-
-    env.load_state()
-    pop = env.solutions[0]
-    fit_pop = env.solutions[1]
-
-    best = np.argmax(fit_pop)
-    mean = np.mean(fit_pop)
-    std = np.std(fit_pop)
-
-    # finds last generation number
-    file_aux  = open(experiment_name+'/gen.txt','r')
-    ini_g = int(file_aux.readline())
-    file_aux.close()
-
-# saves results for first pop
-# essentially initializes the save file
-# from optimization_specialist_demo.py
-file_aux  = open(experiment_name+'/results.txt','a')
-file_aux.write('\n\ngen best mean std')
-print( '\n GENERATION '+str(ini_g)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
-file_aux.write('\n'+str(ini_g)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
-file_aux.close()
-
 # evolution
 for i in range(generations):
     parents = parent_selection(pop, pop_fit, pop_size)
@@ -167,25 +139,12 @@ for i in range(generations):
     pop = np.vstack((pop, offspring))
     pop_fit = np.concatenate([pop_fit, offspring_fit])
     pop, pop_fit = survivor_selection(pop, pop_fit, pop_size)
-    print (f"Gen {i} - Best: {np.max (pop_fit)} - Mean: {np.mean(pop_fit)}")
+    print(f"Gen {i} - Best: {np.max (pop_fit)} - Mean: {np.mean(pop_fit)} - Std: {np.std(pop_fit)}")
 
-    # saves results
-    file_aux  = open(experiment_name+'/results.txt','a')
-    print( '\n GENERATION '+str(i)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
-    file_aux.write('\n'+str(i)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
-    file_aux.close()
-
-    # saves generation number
-    file_aux  = open(experiment_name+'/gen.txt','w')
-    file_aux.write(str(i))
-    file_aux.close()
-
-    # saves file with the best solution
-    np.savetxt(experiment_name+'/best.txt',pop[best])
-
-    # saves simulation state
-    solutions = [pop, fit_pop]
-    env.update_solutions(solutions)
-    env.save_state()
+    # appends results to the csv file
+    with open('results.csv', 'a') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow([i, {np.max(pop_fit)}, {np.mean(pop_fit)}, {np.std(pop_fit)}])
+        #print("saved to csv") 
 # env.play()
 
