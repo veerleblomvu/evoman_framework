@@ -123,7 +123,7 @@ if not os.path.exists(experiment_name+'/evoman_solstate'):
 
     print( '\nNEW EVOLUTION\n')
 
-    pop = np.random.uniform(lower_bound, upper_bound, (pop_size, n_weights))
+    # pop = np.random.uniform(lower_bound, upper_bound, (pop_size, n_weights))
     fit_pop = evaluate(pop)
     best = np.argmax(fit_pop)
     mean = np.mean(fit_pop)
@@ -173,6 +173,7 @@ for i in range(generations):
     file_aux  = open(experiment_name+'/results.txt','a')
     print( '\n GENERATION '+str(i)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
     file_aux.write('\n'+str(i)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
+    file_aux.write(f"Gen {i} - Best: {np.max (pop_fit)} - Mean: {np.mean(pop_fit)}")
     file_aux.close()
 
     # saves generation number
