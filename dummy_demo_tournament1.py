@@ -108,8 +108,8 @@ def uniform_crossover_original(parents):
 def uniform_crossover(parents): 
     parent1 = parents[0]
     parent2 = parents[1]
-    section = np.random.uniform(size=parent1.shape)
-    offspring = parent1 * (section>=0.5) + parent2 * (section < 0.5)
+    random_list = np.random.uniform(size=parent1.shape)
+    offspring = parent1 * (random_list>=0.5) + parent2 * (random_list < 0.5)
     # squeeze to get rid of the extra dimension created during parent selecting
     return offspring
 
@@ -142,12 +142,12 @@ def survivor_selection(population, population_fitness, population_size):
 upper_bound = 1 # upper bound of start weights
 lower_bound = -1 # lower bound of start weights
 pop_size = 100
-generations = 30
-mutation_rate = 0.2
+generations = 15
+mutation_rate = 0.5
 last_best = 0
 # number of weights for multilayer with 10 hidden neurons
 n_weights = (env.get_num_sensors()+1)*n_hidden_neurons + (n_hidden_neurons+1)*5
-n_runs= 10
+n_runs= 5
 n_tests=5
 best_results=[]
 
@@ -173,13 +173,13 @@ for y in range(n_runs):
     pop_gain=pop_result[:,1]
     pop_fit=pop_result[:,0]
     for i in range(generations):
-        parents_original = parent_selection(pop, pop_fit, pop_size)
+        # parents_original = parent_selection(pop, pop_fit, pop_size)
         offspring = []
         for j in range(int(pop_size/2)):
-            parent1_index = tournament_selection(pop, pop_fit, 2)
+            parent1_index = tournament_selection(pop, pop_fit, 10)
             parent1 = pop[parent1_index]
             # print(parent1)
-            parent2_index = tournament_selection(pop, pop_fit, 2)
+            parent2_index = tournament_selection(pop, pop_fit, 10)
             parent2 = pop[parent2_index]
                 # print(parent2)
             parents = [parent1, parent2]
