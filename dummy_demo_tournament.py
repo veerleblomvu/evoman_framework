@@ -96,8 +96,15 @@ def tournament_selection(pop: list, pop_fit: list, k: int) -> list:
 # creates one child out of two parents, using uniform crossover
 def uniform_crossover_original(parents): 
     parent1, parent2 = np.hsplit(parents,2)
-    section = np.random.uniform(size=parent1.shape)
-    offspring = parent1 * (section>=0.5) + parent2 * (section < 0.5)
+    section = np.random.uniform(size=parent1.shape)                         #It generates a random array roll of the same shape as parentsA 
+                                                                            #and parentsB filled with random numbers from a uniform distribution 
+                                                                            #between 0 and 1 using np.random.uniform.
+    offspring = parent1 * (section>=0.5) + parent2 * (section < 0.5)                #it performs the crossover operation by selecting genes from either 
+                                                                                    #parentsA or parentsB for each offspring based on the values in the 
+                                                                                    # roll array. If the corresponding value in roll is greater than or 
+                                                                                    # equal to 0.5, it selects the gene from parentsA, otherwise, 
+                                                                                    # it selects the gene from parentsB
+    #child2 = parent2 * (section>=0.5) + parent1 * (section < 0.5)
     # squeeze to get rid of the extra dimension created during parent selecting
     return np.squeeze(offspring, 1)
 
@@ -167,7 +174,7 @@ for i in range(generations):
         offspring_individual = uniform_mutate(offspring_individual, mutation_rate)
         offspring.append(offspring_individual)
     offspring_fit = evaluate(offspring)
-    pop = np.vstack((pop, offspring))
+    pop = np.vstack((pop, offspring))                                                #we could also remove the entire old gen and use ordeirng to select the best 100 children
     pop_fit = np.concatenate([pop_fit, offspring_fit])
     pop, pop_fit = survivor_selection(pop, pop_fit, pop_size)
     print (f"Gen {i} - Best: {np.max (pop_fit)} - Mean: {np.mean(pop_fit)}")
