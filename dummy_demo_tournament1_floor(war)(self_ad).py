@@ -193,11 +193,11 @@ for y in range(n_runs):
             #offspring_individual = uniform_mutate(offspring_individual, mutation_rate)
             #offspring.append(offspring_individual)
             offspring1= whole_arithmic_crossover(parents, alpha=0.5)[0]
-            offspring1 = uniform_mutate(offspring, mutation_rate, sigma)
+            offspring1 = uniform_mutate(offspring1, mutation_rate, sigma)
             sigma = update_sigma(sigma, learning_rate)
-            
+
             offspring2 = whole_arithmic_crossover(parents, alpha=0.5)[1]
-            offspring2 = uniform_mutate(offspring, mutation_rate, sigma)
+            offspring2 = uniform_mutate(offspring2, mutation_rate, sigma)
             offspring += offspring1 , offspring2
             #print("how many offspring", len(offspring))
 
