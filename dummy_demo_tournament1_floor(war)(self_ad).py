@@ -102,12 +102,7 @@ def whole_arithmic_crossover(parents, alpha=0.5):
         offspring = child1, child2  #creates a tuple where offspring[0] = child1 and offspring[1]= child2
     return offspring
 
-#old mutation:
-# def uniform_mutate(offspring, mutation_rate):
-#     for i in range(0, n_weights): 
-#         if np.random.uniform(0,1) <= mutation_rate: 
-#             offspring[i] = np.random.uniform(-1, 1)
-#     return offspring
+
 
 def update_sigma(sigma, learning_rate):
     '''Takes the previous sigma and updates it
@@ -119,20 +114,25 @@ def update_sigma(sigma, learning_rate):
     if sigma < boundary:
         sigma = boundary
     return sigma
+#old mutation:
+# def uniform_mutate(offspring, mutation_rate):
+#     for i in range(0, n_weights): 
+#         if np.random.uniform(0,1) <= mutation_rate: 
+#             offspring[i] = np.random.uniform(-1, 1)
+#     return offspring
 
 def uniform_mutate(offspring, mutation_rate, sigma):
     '''takes the offspring and mutates it
 
     Args: offspring (list)'''
     # iterate over individuals in offspring
-    for i in range(len(offspring)):
-        # iterate over weights in individual
-        for j in range(len(offspring[i])): 
-            # with probability mutation_rate, alter weight in individual
-            # with value sampled from uniform distribution.
-            if np.random.uniform(0,1) <= mutation_rate: 
-                offspring[i][j] += sigma * np.random.normal(0, 1)
-        np.array(list(map(limits, offspring[i])))      
+    
+    for j in range(len(offspring)): 
+        # with probability mutation_rate, alter weight in individual
+        # with value sampled from uniform distribution.
+        if np.random.uniform(0,1) <= mutation_rate: 
+            offspring[j] += sigma * np.random.normal(0, 1)
+        np.array(list(map(limits, offspring)))      
     return offspring
 
 def limits(value):
@@ -157,7 +157,7 @@ n_runs= 10
 best_results=[]
 sigma=1
 learning_rate = 0.1
-boundary = 0.001
+boundary = 0.01
 
 # initializes environment with ai player using random controller, playing against static enemy
 env = Environment(experiment_name=experiment_name)
