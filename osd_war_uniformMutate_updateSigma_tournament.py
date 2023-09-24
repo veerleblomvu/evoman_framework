@@ -1,38 +1,33 @@
-###############################################################################
-# EvoMan FrameWork - V1.0 2016  			                                  #
-# DEMO : Neuroevolution - Genetic Algorithm  neural network.                  #
-# Author: Karine Miras        			                                      #
-# karine.smiras@gmail.com     				                                  #
-###############################################################################
+################################
+# EvoMan FrameWork - V1.0 2016 #
+# Author: Group 65             #
+#                              #
+################################
 
-# imports framework
+# Import framwork and other libs
 import sys
-
 from evoman.environment import Environment
 from demo_controller import player_controller
-
-# imports other libs
 import time
 import numpy as np
 from math import fabs,sqrt
 import glob, os
 import random
 
-# choose this for not using visuals and thus making experiments faster
+# Choose this for not using visuals and thus making experiments faster
 headless = True
 if headless:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
 
-
+# Create a folder for the experiment in which all the data are stored
 experiment_name = 'a_osd_war2_1'
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
 
+# The NN has one hidden layer with 10 neurons
 n_hidden_neurons = 10
 
-
-
-# initializes simulation in individual evolution mode, for single static enemy.
+# Initializes simulation in individual evolution mode, for single static enemy.
 env = Environment(experiment_name=experiment_name,
                   enemies=[1],
                   playermode="ai",
@@ -42,145 +37,137 @@ env = Environment(experiment_name=experiment_name,
                   speed="fastest",
                   visuals=False)
 
-# default environment fitness is assumed for experiment
-
+# Default environment fitness is assumed for experiment
 env.state_to_log() # checks environment state
 
+# OPTIMIZATION FOR CONTROLLER SOLUTION: GENETIC ALGORITHM
 
-####   Optimization for controller solution (best genotype-weights for phenotype-network): Ganetic Algorihm    ###
+# Set time marker
+ini = time.time()  
 
-ini = time.time()  # sets time marker
-
-
-# genetic algorithm params
-
+# Genetic algorithm parameters
 run_mode = 'train' # train or test
-
-# number of weights for multilayer with 10 hidden neurons
-n_vars = (env.get_num_sensors()+1)*n_hidden_neurons + (n_hidden_neurons+1)*5
-
-dom_u = 1
-dom_l = -1
-npop = 100
-gens = 30
-mutation = 0.2
+n_weights = (env.get_num_sensors()+1)*n_hidden_neurons + (n_hidden_neurons+1)*5 # number of weights for multilayer with 10 hidden neurons
+upper_bound = 1 # upper bound of start weights
+lower_bound = -1 # lower bound of start weights
+pop_size = 100
+n_generations = 30
+mutation_rate = 0.2
 last_best = 0
 sigma = 1
 learning_rate = 0.1
 boundary = 0.001
 k = 2
 
-# runs simulation
 def simulation(env,x):
-    f,p,e,t = env.play(pcont=x)
-    return f
+    """
+    Run a simulation for one individual in the population.
 
-# normalizes
-def norm(x, pfit_pop):
+    Parameters:
+        env (Environment): The environment object representing the game.
+        pop (array-like): The controller or policy for the individual.
 
-    if ( max(pfit_pop) - min(pfit_pop) ) > 0:
-        x_norm = ( x - min(pfit_pop) )/( max(pfit_pop) - min(pfit_pop) )
+    Returns:
+        float: The fitness score of the individual.
+    """
+    # Run the simulation and get fitness, player energy, enemy energy, and duration
+    fitness,p_energy,e_energy,duration = env.play(pcont=x)
+    return fitness
+
+def normalize(x, pop_fit):
+    """
+    Normalize x based on a population fitnesses.
+
+    Parameters:
+        x (float): The value to be normalized.
+        pop_fit (list): List of fitness scores in the population.
+
+    Returns:
+        float: The normalized value of 'x'.
+    """
+    if (max(pop_fit) - min(pop_fit)) > 0:
+        x_norm = (x - min(pop_fit)) / (max(pop_fit) - min(pop_fit))
     else:
         x_norm = 0
 
     if x_norm <= 0:
         x_norm = 0.0000000001
+
     return x_norm
 
+def evaluate(pop):
+    """
+    Determine the fitnesses of individuals in the population.
 
-# evaluation
-def evaluate(x):
-    return np.array(list(map(lambda y: simulation(env,y), x)))
+    Parameters:
+        pop (list): The population of individuals.
 
+    Returns:
+        numpy.ndarray: An array containing the fitness score for each individual.
+    """
+    pop_fit = np.array(list(map(lambda y: simulation(env,y), pop)))
+    return pop_fit
 
-# tournament
-def tournament_karine(pop):
-    c1 =  np.random.randint(0,pop.shape[0], 1)
-    c2 =  np.random.randint(0,pop.shape[0], 1)
+def tournament(pop, pop_fit, k):
+    """
+    Perform a tournament selection on a population.
 
-    if fit_pop[c1] > fit_pop[c2]:
-        return pop[c1][0]
-    else:
-        return pop[c2][0]
-    
-    
-def tournament(pop, k):
-    number_individuals = pop.shape[0]
-    current_winner = np.random.randint(0, number_individuals-1)
-    score = fit_pop[current_winner]
-    for candidates in range(k-1): #We already have one candidate, so we are left with k-1 to choose
-        contender_number = np.random.randint(0, number_individuals-1)
-        if fit_pop[contender_number] > score:
-            current_winner = contender_number
-            score = fit_pop[contender_number]
-    return pop[current_winner]
-    
-def tournament_old2(pop,k):
+    Parameters:
+        pop (numpy.ndarray): The population of individuals.
+        pop_fit (numpy.ndarray): The fitness scores of the individuals.
+        k (int): The number of individuals competing in each tournament.
+
+    Returns:
+        numpy.ndarray: The winning individual from the tournament.
+    """
     n_individuals = pop.shape[0]
-    samples = random.sample(range(0, n_individuals-1), k)
-    pop_fit = evaluate(pop)
-    sample_fitnesses = pop_fit[samples]
-    winner = np.argmax(sample_fitnesses)
-    return pop[winner]
+    current_winner = np.random.randint(0, n_individuals-1)
+    current_max_fit = pop_fit[current_winner]
 
-# limits
-def limits(x):
-    if x>dom_u:
-        return dom_u
-    elif x<dom_l:
-        return dom_l
+    for candidates in range(k-1): #We already have one candidate, so we are left with k-1 to choose
+        contender_number = np.random.randint(0, n_individuals-1)
+        if pop_fit[contender_number] > current_max_fit:
+            current_winner = contender_number
+            current_max_fit = pop_fit[contender_number]
+    winner = pop[current_winner]
+    return winner
+    
+def limits(x, lower_bound, upper_bound):
+    """
+    Ensure x is within specified bounds.
+
+    Parameters:
+        x (float): The input value.
+        lower_bound (float): The lower bound.
+        upper_bound (float): The upper bound.
+
+    Returns:
+        float: The bounded value.
+    """
+    if x>upper_bound:
+        return upper_bound
+    elif x<lower_bound:
+        return lower_bound
     else:
         return x
 
+def whole_arithmic_crossover(pop, pop_fit, k, alpha=0.5):
+    """
+    Perform whole arithmetic crossover on a population.
 
-#crossover - old function where crossover and mutation were together
-def crossover(pop):
+    Parameters:
+        pop (numpy.ndarray): The population of individuals.
+        pop_fit (numpy.ndarray): The fitness scores of the individuals.
+        k (int): The number of individuals competing in each tournament.
+        alpha (float, optional): The blending factor. Default is 0.5.
 
-    total_offspring = np.zeros((0,n_vars))
-
-    for p in range(0,pop.shape[0], 2):
-        p1 = tournament(pop)
-        p2 = tournament(pop)
-
-        n_offspring =   np.random.randint(1,3+1, 1)[0]
-        offspring =  np.zeros( (n_offspring, n_vars) )
-
-        for f in range(0,n_offspring):
-
-            cross_prop = np.random.uniform(0,1)
-            offspring[f] = p1*cross_prop+p2*(1-cross_prop)
-
-            # mutation for 1 individial 
-            for i in range(0,len(offspring[f])):
-                if np.random.uniform(0 ,1)<=mutation:
-                    offspring[f][i] =   offspring[f][i]+np.random.normal(0, 1)
-
-            offspring[f] = np.array(list(map(lambda y: limits(y), offspring[f])))
-
-            total_offspring = np.vstack((total_offspring, offspring[f]))
-
-    return total_offspring
-
-#crossover - old function, but splitted
-def karine_crossover(pop):
-    total_offspring = np.zeros((0,n_vars))
-    for p in range(0,pop.shape[0], 2):
-        p1 = pop[0]
-        p2 = pop[1]
-        n_offspring =   np.random.randint(1,3+1, 1)[0]
-        offspring =  np.zeros( (n_offspring, n_vars))
-
-        for f in range(0,n_offspring):
-            cross_prop = np.random.uniform(0,1)
-            offspring[f] = p1*cross_prop+p2*(1-cross_prop)
-            total_offspring = np.vstack((total_offspring, offspring[f]))
-    return total_offspring
-
-def whole_arithmic_crossover(pop, alpha=0.5):
+    Returns:
+        numpy.ndarray: The resulting offspring population.
+    """
     offspring = []
     for p in range(0, pop.shape[0], 2):
-        parent1 = tournament(pop, k)
-        parent2 = tournament(pop, k)
+        parent1 = tournament(pop, pop_fit, k)
+        parent2 = tournament(pop, pop_fit, k)
         child1 = []
         child2 = []
         for gene1, gene2 in zip(parent1, parent2):
@@ -191,64 +178,76 @@ def whole_arithmic_crossover(pop, alpha=0.5):
         offspring.extend([child1, child2])
     return np.array(offspring)
 
-def karine_mutation(offspring):
-    # mutation for 1 individial 
-    for i in range(0,len(offspring)):
-        randomnr = np.random.uniform(0 ,1)
-        #print("random", randomnr)
-        if randomnr <= mutation:
-            random2 = np.random.normal(0, 1)
-            #print("random2", random2)
-            offspring[i] =   offspring[i]+random2
-            #print("offspring[1]", offspring[i])
-        #print("offspring", offspring)
-    offspring = np.array([limits(y) for y in offspring])
-    return offspring
+def update_sigma(sigma, learning_rate, boundary):
+    """
+    Update the value of sigma.
 
-def update_sigma(sigma, learning_rate):
-    '''Takes the previous sigma and updates it
-    Args: sigma (float)
-    learning_rate (float) set value by user'''
-    random_value = np.random.normal(0,1)
-    exponent = np.exp(learning_rate * random_value)
+    Args:
+        sigma (float): The previous value of sigma.
+        learning_rate (float): The learning rate.
+        boundary (float): The boundary value.
+
+    Returns:
+        float: The updated value of sigma.
+    """
+    exponent = np.exp(learning_rate * (np.random.normal(0,1)))
     sigma = sigma * exponent
     if sigma < boundary:
         sigma = boundary
     return sigma
 
-def uniform_mutate(offspring):
-    """takes the offspring and mutates it
-    Args: offspring (list)
+def uniform_mutate(offspring, mutation_rate, sigma):
     """
-    # mutation for 1 individual
+    Apply uniform mutation to the offspring.
+
+    Args:
+        offspring (numpy.ndarray): The offspring population.
+        mutation_rate (float): The mutation rate.
+        sigma (float): The sigma value.
+
+    Returns:
+        numpy.ndarray: The mutated offspring population.
+    """
     for i in range(len(offspring)):
-        if np.random.uniform(0,1) <= mutation:
+        if np.random.uniform(0,1) <= mutation_rate:
             offspring[i] = sigma * np.random.normal(0,1)
-    offspring = np.array([limits(y) for y in offspring])
+    offspring = np.array([limits(y, -1, 1) for y in offspring])
     return offspring
 
-# kills the worst genomes, and replace with new best/random solutions
-def doomsday(pop,fit_pop):
+def doomsday(pop, pop_fit):
+    """
+    Kills the worst genomes and replaces them with new best/random solutions.
 
-    worst = int(npop/4)  # a quarter of the population
-    order = np.argsort(fit_pop)
-    orderasc = order[0:worst]
+    Parameters:
+        pop (numpy.ndarray): The population of individuals.
+        pop_fit (numpy.ndarray): The fitness scores of the individuals.
 
-    for o in orderasc:
-        for j in range(0,n_vars):
+    Returns:
+        tuple: A tuple containing the updated population and fitness scores.
+    """
+    # Select a quarter of the population as the worst performers
+    ordered_pop_fit = np.argsort(pop_fit)
+    worst_pop_fit = ordered_pop_fit[0:(int(pop_size/4))]
+
+    # Iterte over the genomes of the worst-performing individuals in the population
+    for i in worst_pop_fit:
+        for j in range(0,n_weights):
             pro = np.random.uniform(0,1)
+            # Replace it with a new random value 
             if np.random.uniform(0,1)  <= pro:
-                pop[o][j] = np.random.uniform(dom_l, dom_u) # random dna, uniform dist.
+                pop[i][j] = np.random.uniform(lower_bound, upper_bound)
+            # Replace it with the genetic component from the best individual in the population
             else:
-                pop[o][j] = pop[order[-1:]][0][j] # dna from best
+                pop[i][j] = pop[order[-1:]][0][j] # dna from best
 
-        fit_pop[o]=evaluate([pop[o]])
+        # Evaluate the fitness of the new individual
+        pop_fit[i]=evaluate([pop[i]])
+    
+    # Return the updated population
+    return pop, pop_fit
 
-    return pop,fit_pop
 
-
-
-# loads file with the best solution for testing
+# Loads file with the best solution for testing
 if run_mode =='test':
 
     bsol = np.loadtxt(experiment_name+'/best.txt')
@@ -259,19 +258,18 @@ if run_mode =='test':
     sys.exit(0)
 
 
-# initializes population loading old solutions or generating new ones
-
+# Initializes population loading old solutions or generating new ones
 if not os.path.exists(experiment_name+'/evoman_solstate'):
 
     print( '\nNEW EVOLUTION\n')
 
-    pop = np.random.uniform(dom_l, dom_u, (npop, n_vars))
-    fit_pop = evaluate(pop)
-    best = np.argmax(fit_pop)
-    mean = np.mean(fit_pop)
-    std = np.std(fit_pop)
-    ini_g = 0
-    solutions = [pop, fit_pop]
+    pop = np.random.uniform(lower_bound, upper_bound, (pop_size, n_weights))
+    pop_fit = evaluate(pop)
+    best = np.argmax(pop_fit)
+    mean = np.mean(pop_fit)
+    std = np.std(pop_fit)
+    initial_gen = 0
+    solutions = [pop, pop_fit]
     env.update_solutions(solutions)
 
 else:
@@ -280,61 +278,67 @@ else:
 
     env.load_state()
     pop = env.solutions[0]
-    fit_pop = env.solutions[1]
+    pop_fit = env.solutions[1]
 
-    best = np.argmax(fit_pop)
-    mean = np.mean(fit_pop)
-    std = np.std(fit_pop)
+    best = np.argmax(pop_fit)
+    mean = np.mean(pop_fit)
+    std = np.std(pop_fit)
 
-    # finds last generation number
+    # Find last generation number
     file_aux  = open(experiment_name+'/gen.txt','r')
-    ini_g = int(file_aux.readline())
+    initial_gen = int(file_aux.readline())
     file_aux.close()
 
-
-
-
-# saves results for first pop
+# Saves results for first population
 file_aux  = open(experiment_name+'/results.txt','a')
 file_aux.write('\n\ngen best mean std')
-print( '\n GENERATION '+str(ini_g)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
-file_aux.write('\n'+str(ini_g)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
+print( '\n GENERATION '+str(initial_gen)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
+file_aux.write('\n'+str(initial_gen)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
 file_aux.close()
 
 
-# evolution
+# EVOLUTIONARY LOOP
 
-last_sol = fit_pop[best]
+last_sol = pop_fit[best]
 notimproved = 0
 
-for i in range(ini_g+1, gens):
+# Loop through generations
+for i in range(initial_gen+1, n_generations):
 
-    offspring = whole_arithmic_crossover(pop)  # recombination
-    offspring = [uniform_mutate(gene) for gene in offspring]
-    sigma = update_sigma(sigma, learning_rate)
-
-    #offspring = [karine_mutation(gene) for gene in offspring]  #because recom and mut are splitted
-    #offspring = crossover(pop)  # crossover --> original way 
-    fit_offspring = evaluate(offspring)   # evaluation
+    # Create offspring applying crossover and mutation
+    offspring = whole_arithmic_crossover(pop, pop_fit, k, alpha=0.5)
+    offspring = [uniform_mutate(gene, mutation_rate, sigma) for gene in offspring]
+    sigma = update_sigma(sigma, learning_rate, boundary)
     pop = np.vstack((pop,offspring))
-    fit_pop = np.append(fit_pop,fit_offspring)
 
-    best = np.argmax(fit_pop) #best solution in generation
-    fit_pop[best] = float(evaluate(np.array([pop[best] ]))[0]) # repeats best eval, for stability issues
-    best_sol = fit_pop[best]
+    # Evaluate the fitness of the offspring and select the best for the next generation
+    offspring_fit = evaluate(offspring)   # evaluation
+    pop_fit = np.append(pop_fit,offspring_fit)
+    best = np.argmax(pop_fit) # best solution in generation
+    pop_fit[best] = float(evaluate(np.array([pop[best] ]))[0]) # repeats best evaluation, for stability issues
+    best_sol = pop_fit[best]
 
-    # selection
-    fit_pop_cp = fit_pop
-    fit_pop_norm =  np.array(list(map(lambda y: norm(y,fit_pop_cp), fit_pop))) # avoiding negative probabilities, as fitness is ranges from negative numbers
-    probs = (fit_pop_norm)/(fit_pop_norm).sum()
-    chosen = np.random.choice(pop.shape[0], npop , p=probs, replace=False)
-    chosen = np.append(chosen[1:],best)
+    # SURVIVOR SELECTION
+    # Create a copy of the fitness scores
+    pop_fit_cp = pop_fit
+    
+    # Normalize fitness scores to avoid negative probabilities
+    pop_fit_norm =  np.array(list(map(lambda y: normalize(y,pop_fit_cp), pop_fit)))
+    
+    # Calculate selection probabilities
+    probs = (pop_fit_norm)/(pop_fit_norm).sum()
+    
+    # Randomly choose individuals based on probabilities (without replacement)
+    chosen = np.random.choice(pop.shape[0], pop_size, p=probs, replace=False)
+
+    # Add the best individual to the chosen individuals (preservation of best)
+    chosen = np.append(chosen[1:], best)
+
+    # Update population and fitness scores with selected individuals
     pop = pop[chosen]
-    fit_pop = fit_pop[chosen]
+    pop_fit = pop_fit[chosen]
 
-
-    # searching new areas
-
+    # Searching new areas
     if best_sol <= last_sol:
         notimproved += 1
     else:
@@ -343,25 +347,27 @@ for i in range(ini_g+1, gens):
 
     if notimproved >= 15:
 
+        # Write to a results file
         file_aux  = open(experiment_name+'/results.txt','a')
         file_aux.write('\ndoomsday')
         file_aux.close()
 
-        pop, fit_pop = doomsday(pop,fit_pop)
+        # Perform doomsday operation
+        pop, pop_fit = doomsday(pop,pop_fit)
         notimproved = 0
 
-    best = np.argmax(fit_pop)
-    std  =  np.std(fit_pop)
-    mean = np.mean(fit_pop)
+    best = np.argmax(pop_fit)
+    std  =  np.std(pop_fit)
+    mean = np.mean(pop_fit)
 
 
-    # saves results
+    # Saves result
     file_aux  = open(experiment_name+'/results.txt','a')
-    print( '\n GENERATION '+str(i)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
-    file_aux.write('\n'+str(i)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
+    print( '\n GENERATION '+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
+    file_aux.write('\n'+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
     file_aux.close()
 
-    # saves generation number
+    # Save generation number
     file_aux  = open(experiment_name+'/gen.txt','w')
     file_aux.write(str(i))
     file_aux.close()
@@ -369,13 +375,10 @@ for i in range(ini_g+1, gens):
     # saves file with the best solution
     np.savetxt(experiment_name+'/best.txt',pop[best])
 
-    # saves simulation state
-    solutions = [pop, fit_pop]
+    # Save simulation state
+    solutions = [pop, pop_fit]
     env.update_solutions(solutions)
     env.save_state()
-
-
-
 
 fim = time.time() # prints total execution time for experiment
 print( '\nExecution time: '+str(round((fim-ini)/60))+' minutes \n')
@@ -384,6 +387,5 @@ print( '\nExecution time: '+str(round((fim-ini)))+' seconds \n')
 
 file = open(experiment_name+'/neuroended', 'w')  # saves control (simulation has ended) file for bash loop file
 file.close()
-
 
 env.state_to_log() # checks environment state
