@@ -88,50 +88,48 @@ MESSAGE: state has been loaded.
 
 MESSAGE: state has been saved to files.
 
-MESSAGE: state has been saved to files.
+########## Simulation state - INI ###########
 
-MESSAGE: state has been saved to files.
+# solutions # : LOADED 
 
-MESSAGE: state has been saved to files.
+# sensors # : 20
 
-MESSAGE: state has been saved to files.
+ ------  parameters ------  
 
-MESSAGE: state has been saved to files.
+# contact hurt (training agent) # : player
 
-MESSAGE: state has been saved to files.
+multiple mode: no
 
-MESSAGE: state has been saved to files.
+enemies list: 1
 
-MESSAGE: state has been saved to files.
+current enemy: 1
 
-MESSAGE: state has been saved to files.
+player mode: ai
 
-MESSAGE: state has been saved to files.
+enemy mode: static
 
-MESSAGE: state has been saved to files.
+level: 2
 
-MESSAGE: state has been saved to files.
+clock precision: low
 
-MESSAGE: state has been saved to files.
+inputs coded: no
 
-MESSAGE: state has been saved to files.
+random initialization: no
 
-MESSAGE: state has been saved to files.
+expiration time: 3000
 
-MESSAGE: state has been saved to files.
+speed: fastest
 
-MESSAGE: state has been saved to files.
+load player: yes
 
-MESSAGE: state has been saved to files.
+load enemy: yes
 
-MESSAGE: state has been saved to files.
+sound: off
 
-MESSAGE: state has been saved to files.
+overture time: 100
 
-MESSAGE: state has been saved to files.
+logs: on
 
-MESSAGE: state has been saved to files.
+save logs: yes
 
-MESSAGE: state has been saved to files.
-
-MESSAGE: state has been saved to files.
+########## Simulation state - END ###########

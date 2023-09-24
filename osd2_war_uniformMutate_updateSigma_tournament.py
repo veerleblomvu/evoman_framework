@@ -237,7 +237,7 @@ def elitism(pop, pop_fit, x):
 
     return best_pop, best_pop_fit
 
-def survival_selection(parents, parents_fit, offspring, x, y):
+def elitism_survival_selection(parents, parents_fit, offspring, x, y):
     """
     Perform survival selection to create the next generation.
 
@@ -366,7 +366,7 @@ for i in range(initial_gen+1, n_generations):
     sigma = update_sigma(sigma, learning_rate, boundary)
     
     # Survival selection (10 elite parents + 90 random children)
-    pop = survival_selection(pop, pop_fit, offspring, 10, 90)
+    pop = elitism_survival_selection(pop, pop_fit, offspring, 10, 90)
     pop_fit = evaluate(pop)
 
     # Get max fitness in new population
