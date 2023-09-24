@@ -74,27 +74,6 @@ def simulation(env,x):
     fit,p_energy,e_energy,duration = env.play(pcont=x)
     return fit
 
-def normalize(x, pop_fit):
-    """
-    Normalize x based on a population fitnesses.
-
-    Parameters:
-        x (float): The value to be normalized.
-        pop_fit (list): List of fitness scores in the population.
-
-    Returns:
-        float: The normalized value of 'x'.
-    """
-    if (max(pop_fit) - min(pop_fit)) > 0:
-        x_norm = (x - min(pop_fit)) / (max(pop_fit) - min(pop_fit))
-    else:
-        x_norm = 0
-
-    if x_norm <= 0:
-        x_norm = 0.0000000001
-
-    return x_norm
-
 def evaluate(pop):
     """
     Determine the fitnesses of individuals in the population.
