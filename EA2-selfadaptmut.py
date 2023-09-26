@@ -262,6 +262,7 @@ best_fit = []
 mean_fitness = []
 std_fitness = []
 gen = []
+best_solutions = []
 result_matrix_max=np.zeros((n_runs,n_generations))
 result_matrix_mean=np.zeros((n_runs,n_generations))
 
@@ -273,6 +274,9 @@ for r in range(n_runs):
     pop_fit = pop_fit_gain[:,0]
     pop_gain = pop_fit_gain[:,1]
     best = np.argmax(pop_fit)
+    best_solution = pop[best]
+    best_solutions.append(best_solution)
+
     mean = np.mean(pop_fit)
     std = np.std(pop_fit)
     result_matrix_max[r,i]=np.max(pop_fit)
@@ -303,6 +307,8 @@ for r in range(n_runs):
         pop_gain = pop_fit_gain[:,1]
 
         best = np.argmax(pop_fit)
+        best_solution = pop[best]
+        best_solutions.append(best_solution)
         std  =  np.std(pop_fit)
         mean = np.mean(pop_fit)
 
@@ -328,7 +334,7 @@ print("len fit", len(best_fit))
 print("len mean", len(mean_fitness))
 print("len std", len(std_fitness))
 
-d = {"Run": indices, "gain": best_gain, "Best fit": best_fit, "Mean": mean_fitness, "STD": std_fitness}
+d = {"Run": indices, "gain": best_gain, "Best fit": best_fit, "Mean": mean_fitness, "STD": std_fitness,"BEST SOL":best_solutions}
 df = pd.DataFrame(data=d)
 print(df)
 # makes csv file
