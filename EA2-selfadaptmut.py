@@ -22,7 +22,7 @@ headless = True
 if headless:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
 
-enemy = 8 # MAKE SURE TO ALSO CHANGE LINE 36
+enemy = 2 # MAKE SURE TO ALSO CHANGE LINE 36
 # Create a folder for the experiment in which all the data are stored
 experiment_name = f'EA2_enemy{enemy}'
 if not os.path.exists(experiment_name):
@@ -33,7 +33,7 @@ n_hidden_neurons = 10
 
 # Initializes simulation in individual evolution mode, for single static enemy.
 env = Environment(experiment_name=experiment_name,
-                  enemies=[8],
+                  enemies=[2],
                   playermode="ai",
                   player_controller=player_controller(n_hidden_neurons),
                   enemymode="static",
@@ -256,7 +256,8 @@ def elitism_survival_selection(parents, parents_fit, offspring, x, y):
 
 
 
-indices=[]
+indices_gen = []
+indices_run = []
 best_gain = []
 best_fit = []
 mean_fitness = []
@@ -281,7 +282,8 @@ for r in range(n_runs):
     std = np.std(pop_fit)
     result_matrix_max[r,i]=np.max(pop_fit)
     result_matrix_mean[r,i]=np.mean(pop_fit)
-    indices.append([f"Test {r} - Gen {i}"])
+    indices_gen.append(i)
+    indices_run.append(r)
     best_gain.append(pop_gain[best])
     best_fit.append(pop_fit[best])
     mean_fitness.append(mean)
@@ -289,7 +291,7 @@ for r in range(n_runs):
     gen.append(i)
     # Saves result
     experiment_data  = open(experiment_name+'/results.txt','a')
-    print( '\n GENERATION '+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
+    print( '\n RUN '+str(r)+ ' GENERATION '+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))    
     experiment_data.write('\n'+str(r)+' '+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
     experiment_data.close()
 
@@ -314,7 +316,8 @@ for r in range(n_runs):
 
         result_matrix_max[r,i]=np.max(pop_fit)
         result_matrix_mean[r,i]=np.mean(pop_fit)
-        indices.append([f"Test {r} - Gen {i}"])
+        indices_gen.append(i)
+        indices_run.append(r)
         best_gain.append(pop_gain[best])
         best_fit.append(pop_fit[best])
         mean_fitness.append(mean)
@@ -323,18 +326,18 @@ for r in range(n_runs):
 
         # Saves result
         experiment_data  = open(experiment_name+'/results.txt','a')
-        print( '\n GENERATION '+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
+        print( '\n RUN '+str(r)+ ' GENERATION '+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))        
         experiment_data.write('\n'+str(r)+' '+str(i)+' '+str(round(pop_fit[best],6))+' '+str(round(mean,6))+' '+str(round(std,6))   )
         experiment_data.close()
 
 
-print("len ind", len(indices))
-print("len gain", len(best_gain))
-print("len fit", len(best_fit))
-print("len mean", len(mean_fitness))
-print("len std", len(std_fitness))
+# print("len ind", len(indices))
+# print("len gain", len(best_gain))
+# print("len fit", len(best_fit))
+# print("len mean", len(mean_fitness))
+# print("len std", len(std_fitness))
 
-d = {"Run": indices, "gain": best_gain, "Best fit": best_fit, "Mean": mean_fitness, "STD": std_fitness,"BEST SOL":best_solutions}
+d = {"Run": indices_run, "Gen": indices_gen, "gain": best_gain, "Best fit": best_fit, "Mean": mean_fitness, "STD": std_fitness,"BEST SOL":best_solutions}
 df = pd.DataFrame(data=d)
 print(df)
 # makes csv file
